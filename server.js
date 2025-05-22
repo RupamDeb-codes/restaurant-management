@@ -10,6 +10,10 @@ app.use(express.json());
 const menuRoutes = require('./routes/menuRoutes');
 app.use('/api/menu', menuRoutes);
 
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/order', orderRoutes);
+
+
 console.log('Mongo URI:', process.env.MONGO_URI);
 
 
