@@ -6,7 +6,8 @@ const MenuItemSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   ingredients: [String],
   tags: [String], // e.g. ['vegan', 'spicy']
-  available: { type: Boolean, default: true }
+  available: { type: Boolean, default: true },
+  orderCount:{type:Number ,default:0}
 });
 
 module.exports = mongoose.model('MenuItem', MenuItemSchema);
