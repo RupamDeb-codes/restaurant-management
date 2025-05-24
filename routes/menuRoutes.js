@@ -26,14 +26,25 @@ router.get('/', async (req, res) => {
 
     if (category) filter.category = category;
 
-    const tagConditions = [];
+    const tagFilter = [];
 
-    if (spice === 'spicy') tagConditions.push('spicy');
-    else if (spice === 'nonspicy') filter.tags = { $nin: ['spicy'] };
-
-    if (tagConditions.length && !filter.tags) {
-      filter.tags = { $all: tagConditions };
+    if (spice === 'spicy') {
+      tagFilter.push('spicy');
+    } else if (spice === 'nonspicy') {
+      filter.tags = { $nin: ['spicy'] };
     }
+
+    if (diet === 'vegetarian') {
+      tagFilter.push('vegetarian');
+    } else if (diet === 'nonvegetarian') {
+      tagFilter.push('non-vegetarian');
+    }
+
+    if (tagFilter.length > 0 && !filter.tags) {
+      filter.tags = { $all: tagFilter };
+    }
+
+    console.log("Filter used:", filter);
 
     const items = await MenuItem.find(filter);
     res.status(200).json(items);
@@ -41,6 +52,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch menu items', details: error.message });
   }
 });
+
 
 // PUT: Update a menu item by ID
 router.put('/:id', async (req, res) => {
