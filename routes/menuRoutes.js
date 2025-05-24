@@ -31,9 +31,6 @@ router.get('/', async (req, res) => {
     if (spice === 'spicy') tagConditions.push('spicy');
     else if (spice === 'nonspicy') filter.tags = { $nin: ['spicy'] };
 
-    if (diet === 'vegetarian') tagConditions.push('vegetarian');
-    else if (diet === 'nonvegetarian') tagConditions.push('non-vegetarian');
-
     if (tagConditions.length && !filter.tags) {
       filter.tags = { $all: tagConditions };
     }
