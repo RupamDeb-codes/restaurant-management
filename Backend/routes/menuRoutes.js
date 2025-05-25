@@ -24,27 +24,30 @@ router.get('/', async (req, res) => {
     const { category, spice, diet } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (category) {
+      filter.category = category;
+    }
 
-    const tagFilter = [];
+    const tags = [];
 
-    if (spice === 'spicy') {
-      tagFilter.push('spicy');
-    } else if (spice === 'nonspicy') {
+    if (spice === 'spicy') tags.push('spicy');
+    if (spice === 'nonspicy') {
       filter.tags = { $nin: ['spicy'] };
     }
 
-    if (diet === 'vegetarian') {
-      tagFilter.push('vegetarian');
-    } else if (diet === 'nonvegetarian') {
-      tagFilter.push('non-vegetarian');
-    }
+    if (diet === 'vegetarian') tags.push('vegetarian');
+    if (diet === 'nonvegetarian') tags.push('non-vegetarian');
 
-    if (tagFilter.length > 0 && !filter.tags) {
-      filter.tags = { $all: tagFilter };
+    if (tags.length > 0 && !filter.tags) {
+      filter.tags = { $all: tags };
+    } else if (tags.length > 0 && filter.tags && filter.tags.$nin) {
+      // combine $nin and $all into $and
+      filter.$and = [
+        { tags: filter.tags }, // $nin
+        { tags: { $all: tags } }
+      ];
+      delete filter.tags; // remove direct tags key
     }
-
-    console.log("Filter used:", filter);
 
     const items = await MenuItem.find(filter);
     res.status(200).json(items);
@@ -52,19 +55,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch menu items', details: error.message });
   }
 });
-
-
-// PUT: Update a menu item by ID
-router.put('/:id', async (req, res) => {
-  try {
-    const updatedItem = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updatedItem) return res.status(404).json({ error: 'Menu item not found' });
-    res.json({ message: 'Menu item updated', data: updatedItem });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update item', details: error.message });
-  }
-});
-
 // DELETE: Remove a menu item by ID
 router.delete('/:id', async (req, res) => {
   console.log('DELETE route hit:', req.params.id);
