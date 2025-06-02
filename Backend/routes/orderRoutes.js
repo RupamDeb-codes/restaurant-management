@@ -25,3 +25,46 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+// ✅ Admin: View all orders
+router.get('/admin', async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('items.menuItem')
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch orders', details: err.message });
+  }
+});
+
+// ✅ Admin: Update order status
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('items.menuItem');
+
+    if (!updatedOrder) return res.status(404).json({ error: 'Order not found' });
+
+    res.json({ message: 'Order status updated', data: updatedOrder });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update status', details: err.message });
+  }
+});
+
+// ✅ Admin: Delete an order (optional)
+router.delete('/:id', async (req, res) => {
+  try {
+    const deletedOrder = await Order.findByIdAndDelete(req.params.id);
+    if (!deletedOrder) return res.status(404).json({ error: 'Order not found' });
+    res.json({ message: 'Order deleted', data: deletedOrder });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete order', details: err.message });
+  }
+});
+
+module.exports = router;
