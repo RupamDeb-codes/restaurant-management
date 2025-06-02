@@ -2,17 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 
-// ✅ POST: Place a new order
-router.post('/place', async (req, res) => {
-  try {
-    const newOrder = new Order(req.body);
-    await newOrder.save();
-    res.status(201).json({ message: 'Order placed!', data: newOrder });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to place order', details: err.message });
-  }
-});
-
 // ✅ Admin: View all orders — must come before '/:id'
 router.get('/admin', async (req, res) => {
   try {
@@ -22,6 +11,17 @@ router.get('/admin', async (req, res) => {
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch orders', details: err.message });
+  }
+});
+
+// ✅ POST: Place a new order
+router.post('/place', async (req, res) => {
+  try {
+    const newOrder = new Order(req.body);
+    await newOrder.save();
+    res.status(201).json({ message: 'Order placed!', data: newOrder });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to place order', details: err.message });
   }
 });
 
