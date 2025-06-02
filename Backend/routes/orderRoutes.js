@@ -2,13 +2,23 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 
-// ✅ Admin: View all orders — must come before '/:id'
+// ✅ Admin: View all orders (fallback included)
 router.get('/admin', async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('items.menuItem')
       .sort({ createdAt: -1 });
-    res.json(orders);
+
+    // Fallback: remove items with undefined menuItem
+    const safeOrders = orders.map(order => {
+      const validItems = order.items.filter(item => item.menuItem);
+      return {
+        ...order.toObject(),
+        items: validItems
+      };
+    });
+
+    res.json(safeOrders);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch orders', details: err.message });
   }
@@ -48,7 +58,14 @@ router.get('/:id', async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('items.menuItem');
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    res.status(200).json(order);
+
+    const validItems = order.items.filter(item => item.menuItem);
+    const safeOrder = {
+      ...order.toObject(),
+      items: validItems
+    };
+
+    res.status(200).json(safeOrder);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch order', details: err.message });
   }
