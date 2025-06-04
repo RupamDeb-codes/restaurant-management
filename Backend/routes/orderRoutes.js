@@ -2,19 +2,26 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 
-// ✅ Admin: View all orders (fallback included)
+// ✅ GET: Admin - View all orders with menuItem populated and totalPrice included
 router.get('/admin', async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('items.menuItem')
       .sort({ createdAt: -1 });
 
-    // Fallback: remove items with undefined menuItem
     const safeOrders = orders.map(order => {
       const validItems = order.items.filter(item => item.menuItem);
+
+      const totalPrice = validItems.reduce((sum, item) => {
+        const price = item.menuItem?.price || 0;
+        const quantity = item.quantity || 0;
+        return sum + price * quantity;
+      }, 0);
+
       return {
         ...order.toObject(),
-        items: validItems
+        items: validItems,
+        totalPrice
       };
     });
 
@@ -35,7 +42,7 @@ router.post('/place', async (req, res) => {
   }
 });
 
-// ✅ Admin: Update order status
+// ✅ PUT: Admin - Update order status
 router.put('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
@@ -53,16 +60,24 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
-// ✅ Track order by ID
+// ✅ GET: Track order by ID (safe version)
 router.get('/:id', async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('items.menuItem');
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     const validItems = order.items.filter(item => item.menuItem);
+
+    const totalPrice = validItems.reduce((sum, item) => {
+      const price = item.menuItem?.price || 0;
+      const quantity = item.quantity || 0;
+      return sum + price * quantity;
+    }, 0);
+
     const safeOrder = {
       ...order.toObject(),
-      items: validItems
+      items: validItems,
+      totalPrice
     };
 
     res.status(200).json(safeOrder);
@@ -71,11 +86,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ✅ Admin: Delete an order
+// ✅ DELETE: Admin - Delete an order
 router.delete('/:id', async (req, res) => {
   try {
     const deletedOrder = await Order.findByIdAndDelete(req.params.id);
     if (!deletedOrder) return res.status(404).json({ error: 'Order not found' });
+
     res.json({ message: 'Order deleted', data: deletedOrder });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete order', details: err.message });
