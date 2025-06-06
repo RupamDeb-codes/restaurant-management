@@ -6,15 +6,21 @@ const Order = require('../models/Order');
 router.get('/admin', async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate('items.menuItem')
+      .populate({
+        path: 'items.menuItem',
+        select: 'name price'
+      })
       .sort({ createdAt: -1 });
 
     const safeOrders = orders.map(order => {
-      const validItems = order.items.filter(item => item.menuItem);
+      const validItems = order.items.filter(item => item.menuItem && typeof item.menuItem.price === 'number');
+
+      // Optional debug
+      // console.log('🧾 Valid items:', validItems);
 
       const totalPrice = validItems.reduce((sum, item) => {
-        const price = item.menuItem?.price || 0;
-        const quantity = item.quantity || 0;
+        const price = Number(item.menuItem.price || 0);
+        const quantity = Number(item.quantity || 0);
         return sum + price * quantity;
       }, 0);
 
@@ -50,7 +56,10 @@ router.put('/:id/status', async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    ).populate('items.menuItem');
+    ).populate({
+      path: 'items.menuItem',
+      select: 'name price'
+    });
 
     if (!updatedOrder) return res.status(404).json({ error: 'Order not found' });
 
@@ -63,14 +72,17 @@ router.put('/:id/status', async (req, res) => {
 // ✅ GET: Track order by ID (safe version)
 router.get('/:id', async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('items.menuItem');
+    const order = await Order.findById(req.params.id).populate({
+      path: 'items.menuItem',
+      select: 'name price'
+    });
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    const validItems = order.items.filter(item => item.menuItem);
+    const validItems = order.items.filter(item => item.menuItem && typeof item.menuItem.price === 'number');
 
     const totalPrice = validItems.reduce((sum, item) => {
-      const price = item.menuItem?.price || 0;
-      const quantity = item.quantity || 0;
+      const price = Number(item.menuItem.price || 0);
+      const quantity = Number(item.quantity || 0);
       return sum + price * quantity;
     }, 0);
 
