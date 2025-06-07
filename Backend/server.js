@@ -13,6 +13,10 @@ app.use('/api/menu', menuRoutes);
 const orderRoutes = require('./routes/orderRoutes');
 app.use('/api/order', orderRoutes);
 
+const analyticsRoutes = require('./routes/analyticsRoutes');
+app.use('/api/analytics', analyticsRoutes);
+
+
 
 console.log('Mongo URI:', process.env.MONGO_URI);
 
