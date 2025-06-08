@@ -1,4 +1,3 @@
-// routes/menuRoutes.js
 const express = require('express');
 const router = express.Router();
 const MenuItem = require('../models/MenuItem');
@@ -20,16 +19,15 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// ✅ GET: Filter menu by category, spice, and diet
+// ✅ GET: Filter menu by category, spice, and diet (Customer-side)
 router.get('/', async (req, res) => {
   try {
     const { category, spice, diet } = req.query;
-    const filter = {};
+
+    const filter = { available: true }; // 🔥 Show only available items
     const tagConditions = [];
 
-    if (category) {
-      filter.category = category;
-    }
+    if (category) filter.category = category;
 
     if (spice === 'spicy') tagConditions.push('spicy');
     if (spice === 'nonspicy') filter.tags = { $nin: ['spicy'] };
@@ -41,8 +39,8 @@ router.get('/', async (req, res) => {
       filter.tags = { $all: tagConditions };
     } else if (tagConditions.length && filter.tags?.$nin) {
       filter.$and = [
-        { tags: filter.tags }, // $nin
-        { tags: { $all: tagConditions } }
+        { tags: filter.tags },           // handles $nin
+        { tags: { $all: tagConditions } } // handles inclusion
       ];
       delete filter.tags;
     }
@@ -102,7 +100,7 @@ router.get('/most-ordered', async (req, res) => {
       { $limit: 10 },
       {
         $lookup: {
-          from: 'menuitems', // Make sure this matches the MongoDB collection name exactly
+          from: 'menuitems', // Must match the collection name
           localField: '_id',
           foreignField: '_id',
           as: 'menuItem'
@@ -116,6 +114,7 @@ router.get('/most-ordered', async (req, res) => {
           category: '$menuItem.category',
           price: '$menuItem.price',
           tags: '$menuItem.tags',
+          available: '$menuItem.available',
           totalOrdered: 1
         }
       }

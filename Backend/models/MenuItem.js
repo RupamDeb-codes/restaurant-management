@@ -5,10 +5,11 @@ const MenuItemSchema = new mongoose.Schema({
   name: String,
   category: String,
   price: Number,
-  ingredients: [String],
   tags: [String],
-  available: Boolean
+  available: {
+    type: Boolean,
+    default: true  // All new items are available by default
+  }
 });
-
 
 module.exports = mongoose.model('MenuItem', MenuItemSchema);
