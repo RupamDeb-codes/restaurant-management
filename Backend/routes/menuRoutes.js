@@ -1,7 +1,8 @@
+// routes/menuRoutes.js
 const express = require('express');
 const router = express.Router();
 const MenuItem = require('../models/MenuItem');
-const Order = require('../models/Order'); // ✅ Import Order model for analytics
+const Order = require('../models/Order');
 
 // ✅ Test route
 router.get('/test', (req, res) => {
@@ -24,27 +25,24 @@ router.get('/', async (req, res) => {
   try {
     const { category, spice, diet } = req.query;
     const filter = {};
+    const tagConditions = [];
 
     if (category) {
       filter.category = category;
     }
 
-    const tags = [];
+    if (spice === 'spicy') tagConditions.push('spicy');
+    if (spice === 'nonspicy') filter.tags = { $nin: ['spicy'] };
 
-    if (spice === 'spicy') tags.push('spicy');
-    if (spice === 'nonspicy') {
-      filter.tags = { $nin: ['spicy'] };
-    }
+    if (diet === 'vegetarian') tagConditions.push('vegetarian');
+    if (diet === 'nonvegetarian') tagConditions.push('non-vegetarian');
 
-    if (diet === 'vegetarian') tags.push('vegetarian');
-    if (diet === 'nonvegetarian') tags.push('non-vegetarian');
-
-    if (tags.length > 0 && !filter.tags) {
-      filter.tags = { $all: tags };
-    } else if (tags.length > 0 && filter.tags && filter.tags.$nin) {
+    if (tagConditions.length && !filter.tags) {
+      filter.tags = { $all: tagConditions };
+    } else if (tagConditions.length && filter.tags?.$nin) {
       filter.$and = [
         { tags: filter.tags }, // $nin
-        { tags: { $all: tags } }
+        { tags: { $all: tagConditions } }
       ];
       delete filter.tags;
     }
@@ -56,19 +54,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ✅ PUT: Update menu item by ID
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedItem = await MenuItem.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedItem) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    res.json({ message: 'Menu item updated successfully!', data: updatedItem });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update item', details: error.message });
+  }
+});
+
 // ✅ DELETE: Remove a menu item by ID
 router.delete('/:id', async (req, res) => {
-  console.log('DELETE route hit:', req.params.id);
   try {
     const deletedItem = await MenuItem.findByIdAndDelete(req.params.id);
-    if (!deletedItem) return res.status(404).json({ error: 'Menu item not found' });
+    if (!deletedItem) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
     res.json({ message: 'Menu item deleted successfully', data: deletedItem });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete item', details: error.message });
   }
 });
 
-// ✅ NEW: GET most ordered menu items
+// ✅ GET: Most Ordered Menu Items (Top 10)
 router.get('/most-ordered', async (req, res) => {
   try {
     const result = await Order.aggregate([
@@ -83,7 +102,7 @@ router.get('/most-ordered', async (req, res) => {
       { $limit: 10 },
       {
         $lookup: {
-          from: 'menuitems', // Make sure this matches your MongoDB collection name
+          from: 'menuitems', // Make sure this matches the MongoDB collection name exactly
           localField: '_id',
           foreignField: '_id',
           as: 'menuItem'
@@ -92,11 +111,10 @@ router.get('/most-ordered', async (req, res) => {
       { $unwind: '$menuItem' },
       {
         $project: {
-          _id: 0,
           id: '$menuItem._id',
           name: '$menuItem.name',
-          price: '$menuItem.price',
           category: '$menuItem.category',
+          price: '$menuItem.price',
           tags: '$menuItem.tags',
           totalOrdered: 1
         }
