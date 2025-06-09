@@ -11,7 +11,20 @@ router.get('/test', (req, res) => {
 // ✅ POST: Add new menu item
 router.post('/add', async (req, res) => {
   try {
-    const newItem = new MenuItem(req.body);
+    const { name, category, price, tags = [], available = true } = req.body;
+
+    if (!name || !category || typeof price !== 'number') {
+      return res.status(400).json({ error: 'Name, category, and price are required fields' });
+    }
+
+    const newItem = new MenuItem({
+      name,
+      category,
+      price,
+      tags,
+      available
+    });
+
     await newItem.save();
     res.status(201).json({ message: 'Menu item added successfully!', data: newItem });
   } catch (error) {
@@ -19,18 +32,16 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// ✅ CUSTOMER: GET - Filter menu by category, spice, diet, and availability
+// ✅ CUSTOMER: GET - Fetch filtered and available menu items
 router.get('/', async (req, res) => {
   try {
     const { category, spice, diet } = req.query;
-    const filter = { available: true }; // Show only available items to customer
+    const filter = { available: true };
     const tagConditions = [];
 
     if (category) filter.category = category;
-
     if (spice === 'spicy') tagConditions.push('spicy');
     if (spice === 'nonspicy') filter.tags = { $nin: ['spicy'] };
-
     if (diet === 'vegetarian') tagConditions.push('vegetarian');
     if (diet === 'nonvegetarian') tagConditions.push('non-vegetarian');
 
@@ -39,7 +50,7 @@ router.get('/', async (req, res) => {
     } else if (tagConditions.length && filter.tags?.$nin) {
       filter.$and = [
         { tags: filter.tags }, // $nin
-        { tags: { $all: tagConditions } }
+        { tags: { $all: tagConditions } } // $all
       ];
       delete filter.tags;
     }
@@ -51,17 +62,17 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ✅ ADMIN: GET - Fetch all items including unavailable
+// ✅ ADMIN: GET - Fetch all menu items regardless of availability
 router.get('/admin/all', async (req, res) => {
   try {
-    const items = await MenuItem.find(); // No filter on availability
+    const items = await MenuItem.find(); // No filters
     res.status(200).json(items);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch all menu items', details: error.message });
   }
 });
 
-// ✅ PUT: Update menu item by ID
+// ✅ PUT: Update a menu item by ID
 router.put('/:id', async (req, res) => {
   try {
     const updatedItem = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
