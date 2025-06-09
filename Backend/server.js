@@ -3,13 +3,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+// ✅ Initialize app
 const app = express();
 
 // ✅ Middleware
 app.use(cors());
 app.use(express.json());
 
-// ✅ Route imports
+// ✅ Import routes
 const menuRoutes = require('./routes/menuRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
@@ -19,7 +20,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// ✅ Home route
+// ✅ Root route
 app.get('/', (req, res) => {
   res.send('🍽️ Restaurant Management API is running');
 });
@@ -32,7 +33,7 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB'))
 .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// ✅ Catch-all for undefined routes
+// ✅ 404 Handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });

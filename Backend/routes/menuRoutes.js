@@ -2,15 +2,14 @@ const express = require('express');
 const router = express.Router();
 const MenuItem = require('../models/MenuItem');
 const Order = require('../models/Order');
-const verifyToken = require('./authMiddleware'); // ✅ Middleware to verify Firebase token
 
 // ✅ Test route
 router.get('/test', (req, res) => {
   res.json({ message: '✅ Menu routes are connected properly' });
 });
 
-// ✅ PROTECTED: Add new menu item
-router.post('/add', verifyToken, async (req, res) => {
+// ✅ PUBLIC: Add new menu item
+router.post('/add', async (req, res) => {
   try {
     const { name, category, price, tags = [], available = true } = req.body;
 
@@ -26,7 +25,7 @@ router.post('/add', verifyToken, async (req, res) => {
   }
 });
 
-// ✅ CUSTOMER: Get available menu items (no auth required)
+// ✅ PUBLIC: Get available menu items
 router.get('/', async (req, res) => {
   try {
     const { category, spice, diet } = req.query;
@@ -43,8 +42,8 @@ router.get('/', async (req, res) => {
       filter.tags = { $all: tagConditions };
     } else if (tagConditions.length && filter.tags?.$nin) {
       filter.$and = [
-        { tags: filter.tags }, // $nin
-        { tags: { $all: tagConditions } } // $all
+        { tags: filter.tags },
+        { tags: { $all: tagConditions } }
       ];
       delete filter.tags;
     }
@@ -56,8 +55,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ✅ PROTECTED: Admin fetch all
-router.get('/admin/all', verifyToken, async (req, res) => {
+// ✅ PUBLIC: Fetch all menu items
+router.get('/admin/all', async (req, res) => {
   try {
     const items = await MenuItem.find();
     res.status(200).json(items);
@@ -66,8 +65,8 @@ router.get('/admin/all', verifyToken, async (req, res) => {
   }
 });
 
-// ✅ PROTECTED: Update a menu item by ID
-router.put('/:id', verifyToken, async (req, res) => {
+// ✅ PUBLIC: Update a menu item by ID
+router.put('/:id', async (req, res) => {
   try {
     const updatedItem = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedItem) {
@@ -79,8 +78,8 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ✅ PROTECTED: Delete a menu item by ID
-router.delete('/:id', verifyToken, async (req, res) => {
+// ✅ PUBLIC: Delete a menu item by ID
+router.delete('/:id', async (req, res) => {
   try {
     const deletedItem = await MenuItem.findByIdAndDelete(req.params.id);
     if (!deletedItem) {
@@ -92,7 +91,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Get most ordered items (public)
+// ✅ PUBLIC: Get most ordered items
 router.get('/most-ordered', async (req, res) => {
   try {
     const result = await Order.aggregate([
