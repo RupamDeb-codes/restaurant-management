@@ -4,23 +4,27 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
+
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 
+// ✅ Route imports
 const menuRoutes = require('./routes/menuRoutes');
-app.use('/api/menu', menuRoutes);
-
 const orderRoutes = require('./routes/orderRoutes');
-app.use('/api/order', orderRoutes);
-
 const analyticsRoutes = require('./routes/analyticsRoutes');
+
+// ✅ Use routes
+app.use('/api/menu', menuRoutes);
+app.use('/api/order', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
+// ✅ Home route
+app.get('/', (req, res) => {
+  res.send('🍽️ Restaurant Management API is running');
+});
 
-
-console.log('Mongo URI:', process.env.MONGO_URI);
-
-
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -28,17 +32,13 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB'))
 .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-
-app.get('/', (req, res) => {
-  res.send('Restaurant Management API is running');
-});
-
-const PORT = process.env.PORT || 4000;
-// Catch-all for unknown routes
+// ✅ Catch-all for undefined routes
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// ✅ Start server
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
