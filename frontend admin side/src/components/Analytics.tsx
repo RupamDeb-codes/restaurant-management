@@ -90,6 +90,9 @@ export function Analytics() {
       setCategoryRevenue(revenueData);
       setPeakHours(hoursData);
 
+      // Debug: Log the peak hours data to see what's being returned
+      console.log('Peak Hours Data:', hoursData);
+
       if (isRefresh) {
         addToast('success', 'Analytics data refreshed successfully');
       }
@@ -110,6 +113,9 @@ export function Analytics() {
   const handleRefresh = () => {
     loadAnalyticsData(true);
   };
+
+  // Sort peak hours data by hour to ensure proper order
+  const sortedPeakHours = [...peakHours].sort((a, b) => a._id - b._id);
 
   // Chart configurations
   const dailySalesChartData = {
@@ -179,11 +185,11 @@ export function Analytics() {
   };
 
   const peakHoursChartData = {
-    labels: peakHours.map(item => formatHour(item._id)),
+    labels: sortedPeakHours.map(item => formatHour(item._id)),
     datasets: [
       {
         label: 'Orders',
-        data: peakHours.map(item => item.orders),
+        data: sortedPeakHours.map(item => item.orders),
         borderColor: 'rgb(168, 85, 247)',
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         borderWidth: 3,
@@ -395,7 +401,7 @@ export function Analytics() {
               </div>
             </div>
             <div className="h-80">
-              {peakHours.length > 0 ? (
+              {sortedPeakHours.length > 0 ? (
                 <Line data={peakHoursChartData} options={chartOptions} />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
@@ -403,11 +409,15 @@ export function Analytics() {
                 </div>
               )}
             </div>
+            {/* Debug info - remove this after testing */}
+            <div className="mt-4 text-xs text-gray-500">
+              Peak Hours Data: {sortedPeakHours.map(h => `${formatHour(h._id)}: ${h.orders}`).join(', ')}
+            </div>
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Summary Stats - REMOVED TOTAL ORDERS */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
             <div className="flex items-center gap-3">
               <div className="bg-blue-100 p-2 rounded-lg">
@@ -417,20 +427,6 @@ export function Analytics() {
                 <p className="text-sm text-gray-600">Total Revenue</p>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(categoryRevenue.reduce((sum, item) => sum + item.revenue, 0))}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Orders</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {mostOrdered.reduce((sum, item) => sum + item.totalOrdered, 0)}
                 </p>
               </div>
             </div>
@@ -458,8 +454,8 @@ export function Analytics() {
               <div>
                 <p className="text-sm text-gray-600">Peak Hour</p>
                 <p className="text-xl font-bold text-gray-900">
-                  {peakHours.length > 0 
-                    ? formatHour(peakHours.reduce((max, item) => item.orders > max.orders ? item : max, peakHours[0])._id)
+                  {sortedPeakHours.length > 0 
+                    ? formatHour(sortedPeakHours.reduce((max, item) => item.orders > max.orders ? item : max, sortedPeakHours[0])._id)
                     : 'N/A'
                   }
                 </p>
