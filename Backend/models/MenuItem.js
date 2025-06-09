@@ -6,7 +6,7 @@ const MenuItemSchema = new mongoose.Schema({
   category: String,
   price: Number,
   tags: [String],
-  ingridients:[string],
+  ingridients:[String],
   available: {
     type: Boolean,
     default: true  // All new items are available by default
