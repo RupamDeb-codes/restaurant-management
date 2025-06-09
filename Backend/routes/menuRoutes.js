@@ -19,12 +19,11 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// ✅ GET: Filter menu by category, spice, and diet (Customer-side)
+// ✅ CUSTOMER: GET - Filter menu by category, spice, diet, and availability
 router.get('/', async (req, res) => {
   try {
     const { category, spice, diet } = req.query;
-
-    const filter = { available: true }; // 🔥 Show only available items
+    const filter = { available: true }; // Show only available items to customer
     const tagConditions = [];
 
     if (category) filter.category = category;
@@ -39,8 +38,8 @@ router.get('/', async (req, res) => {
       filter.tags = { $all: tagConditions };
     } else if (tagConditions.length && filter.tags?.$nin) {
       filter.$and = [
-        { tags: filter.tags },           // handles $nin
-        { tags: { $all: tagConditions } } // handles inclusion
+        { tags: filter.tags }, // $nin
+        { tags: { $all: tagConditions } }
       ];
       delete filter.tags;
     }
@@ -52,19 +51,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ✅ ADMIN: GET - Fetch all items including unavailable
+router.get('/admin/all', async (req, res) => {
+  try {
+    const items = await MenuItem.find(); // No filter on availability
+    res.status(200).json(items);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch all menu items', details: error.message });
+  }
+});
+
 // ✅ PUT: Update menu item by ID
 router.put('/:id', async (req, res) => {
   try {
-    const updatedItem = await MenuItem.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-
+    const updatedItem = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedItem) {
       return res.status(404).json({ error: 'Menu item not found' });
     }
-
     res.json({ message: 'Menu item updated successfully!', data: updatedItem });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update item', details: error.message });
@@ -78,7 +81,6 @@ router.delete('/:id', async (req, res) => {
     if (!deletedItem) {
       return res.status(404).json({ error: 'Menu item not found' });
     }
-
     res.json({ message: 'Menu item deleted successfully', data: deletedItem });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete item', details: error.message });
@@ -100,7 +102,7 @@ router.get('/most-ordered', async (req, res) => {
       { $limit: 10 },
       {
         $lookup: {
-          from: 'menuitems', // Must match the collection name
+          from: 'menuitems',
           localField: '_id',
           foreignField: '_id',
           as: 'menuItem'
@@ -119,7 +121,6 @@ router.get('/most-ordered', async (req, res) => {
         }
       }
     ]);
-
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch most ordered items', details: error.message });
